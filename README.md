@@ -2,4 +2,8 @@
 
 RestaUm game project.
 
-Developed by: Bianca Nunes Coelho e Raíssa Nunes Coelho 
+## Developed by: 
+
+[Raíssa Nunes Coelho](https://github.com/raissa-coelho)
+ 
+[Bianca Nunes Coelho](https://github.com/BiancaNCoelho) 
