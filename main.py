@@ -4,9 +4,10 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QGridLay
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 
-class MinhaJanela(QWidget):
+class MyWindow(QWidget):
     def __init__(self):
         super().__init__()
+        self.selecionada = None
 
         self.setWindowTitle("RESTA UM")
         self.setGeometry(100, 100, 500, 500)
@@ -19,96 +20,141 @@ class MinhaJanela(QWidget):
         self.label.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.label, 0, 0, 1, 3)
 
-        self.botao_jogar = QPushButton("Jogar", self)
-        self.botao_jogar.setStyleSheet("background-color: #be9b7b;color: #3c2f2f;")
-        self.botao_jogar.clicked.connect(self.jogar)
-        self.layout.addWidget(self.botao_jogar, 1, 0)
+        self.play_button = QPushButton("Play", self)
+        self.play_button.setStyleSheet("background-color: #be9b7b;color: #3c2f2f;")
+        self.play_button.clicked.connect(self.jogar)
+        self.layout.addWidget(self.play_button, 1, 0)
 
-        self.botao_jogar = QPushButton("Regras", self)
-        self.botao_jogar.setStyleSheet("background-color: #be9b7b;color: #3c2f2f;")
-        self.botao_jogar.clicked.connect(self.regras)
-        self.layout.addWidget(self.botao_jogar, 1, 1)
+        self.rules_button = QPushButton("Rules", self)
+        self.rules_button.setStyleSheet("background-color: #be9b7b;color: #3c2f2f;")
+        self.rules_button.clicked.connect(self.regras)
+        self.layout.addWidget(self.rules_button, 1, 1)
 
-        self.botao_sair = QPushButton("Sair", self)
-        self.botao_sair.setStyleSheet("background-color: #be9b7b;color: #3c2f2f;")
-        self.botao_sair.clicked.connect(self.sair)
-        self.layout.addWidget(self.botao_sair, 1, 2) 
+        self.quit_button = QPushButton("Quit", self)
+        self.quit_button.setStyleSheet("background-color: #be9b7b;color: #3c2f2f;")
+        self.quit_button.clicked.connect(self.sair)
+        self.layout.addWidget(self.quit_button, 1, 2) 
 
-        self.setregras = QWidget()
-        self.setregras .setLayout(QGridLayout())
-        self.setregras .setVisible(False) 
-        self.layout.addWidget(self.setregras, 2, 0, 1, 3)
+        self.setRules = QWidget()
+        self.setRules .setLayout(QGridLayout())
+        self.setRules .setVisible(False) 
+        self.layout.addWidget(self.setRules, 2, 0, 1, 3)
 
-        self.criar_tabuleiro()
-        self.tabuleiro_widget = QWidget()
-        self.tabuleiro_widget.setLayout(self.tabuleiro)
-        self.tabuleiro_widget.setVisible(False) 
-        self.layout.addWidget(self.tabuleiro_widget, 2, 0, 1, 3)
+        self.create_board()
+        self.board_widget = QWidget()
+        self.board_widget.setLayout(self.board)
+        self.board_widget.setVisible(False) 
+        self.layout.addWidget(self.board_widget, 2, 0, 1, 3)
 
         self.setLayout(self.layout)
 
-    def criar_tabuleiro(self):
-        self.tabuleiro = QGridLayout()
+    def create_board(self):
+        self.board = QGridLayout()
+        self.state = [[1] * 7 for _ in range(7)]
 
-        for linha in range(7):
-            for coluna in range(7):
-                botao = QPushButton("", self)
-                botao.setFixedSize(50, 50)
+        for row in range(7):
+            for col in range(7):
+                button = QPushButton("", self)
+                button.setFixedSize(50, 50)
+                button.row, button.col = row, col
 
-                if (linha < 2 or linha > 4) and (coluna < 2 or coluna > 4):
-                    botao.setEnabled(False)
-                    botao.setStyleSheet("background-color: gray;")
+                if (row < 2 or row > 4) and (col < 2 or col > 4):
+                    button.setEnabled(False)
+                    button.setStyleSheet("background-color: gray;")
+                    self.state[row][col] = -1
                 else:
-                    botao.setStyleSheet("background-color: blue;")
-                    botao.clicked.connect(self.clicar_celula)
-                if (linha == 3 and coluna == 3):
-                    botao.setStyleSheet("background-color: white;")
+                    button.setStyleSheet("background-color: blue;")
+                    button.clicked.connect(self.click_cell)
+                if (row == 3 and col == 3):
+                    button.setStyleSheet("background-color: white;")
+                    self.state[row][col] = 0
 
-                self.tabuleiro.addWidget(botao, linha, coluna)
+                self.board.addWidget(button, row, col)
+    
+    def click_cell(self):
+        button = self.sender()
+        row, col = button.row, button.col 
 
-    def clicar_celula(self):
-        botao = self.sender()
-        print(f"Célula clicada: {botao.x()}, {botao.y()}")
-        if botao.isEnabled() and botao.styleSheet() != "background-color: white;":
-            botao.setStyleSheet("background-color: green;")
+        if row < 0 or col < 0 or row >= len(self.state) or col >= len(self.state[0]):
+            return
+
+        if self.selecionada is None:
+            if self.state[row][col] == 1:
+                self.selecionada = (row, col)
+                button.setStyleSheet("background-color: green;")
+        else:
+            row_piece, col_piece = self.selecionada
+            if self.check_move(row_piece, col_piece, row, col):
+                self.move_piece(row_piece, col_piece, row, col)
+            else:
+                button.setStyleSheet("background-color: red;")
+            
+            self.selecionada = None
+            self.update()
+
+    def check_move(self, row_piece, col_piece, row, col):
+        if abs(row - row_piece) == 2 and col == col_piece:
+            move_x, move_y = (row + row_piece) // 2, col
+        elif abs(col - col_piece) == 2 and row == row_piece:
+            move_x, move_y = row, (col + col_piece) // 2
+        else:  
+            return False
+
+        return self.state[row][col] == 0 and self.state[move_x][move_y] == 1
+        
+    def move_piece(self, row_piece, col_piece, row, col):
+        move_x, move_y = (row + row_piece) // 2, (col + col_piece) // 2
+
+        self.state[row_piece][col_piece] = 0
+        self.state[move_x][move_y] = 0
+        self.state[row][col] = 1
+        self.update()
+
+    def update(self):
+        for i in range(7):
+            for j in range(7):
+                button = self.board.itemAtPosition(i, j).widget()
+                if self.state[i][j] == 1:
+                    button.setStyleSheet("background-color: blue;")
+                elif self.state[i][j] == 0:
+                    button.setStyleSheet("background-color: white;")
 
     def regras(self):
-        self.label.setText("Regras")
-        text = """
+        self.label.setText("How to Play")
 
-        Como jogar:
-        1. Escolha uma peça para começar.
-        2. Pula a peça escolhida sobre outra peça, na horizontal ou na vertical, até chegar a um espaço vazio.
-        3. Repita os movimentos até restar apenas uma peça. 
-        
-        A partida terminaa quando não for possivel realizar um movimento ou quando restar apenas uma peça."""
+        text = """
+        1. Choose a piece.
+        2. Jump the chosen piece over another piece, either horizontally or vertically, until it reaches an empty space.
+        3. Repeat the moves until only one piece remains. 
+        4. The game ends when no more moves are possible or when only one piece is left.
+        """
 
         dir = os.path.dirname(__file__)
-        path = os.path.join(dir, 'assets/solitaire.jpg')
+        path = os.path.join(dir, 'assets/game_images/solitaire.jpg')
         picture = QPixmap(path)
 
-        if self.setregras.layout().count() == 0:
+        if self.setRules.layout().count() == 0:
             picture = picture.scaled(200, 200)
             image = QLabel(self)
             image.setPixmap(picture)
             image.setAlignment(Qt.AlignCenter)
             s = QLabel(text, self)
             s.setWordWrap(True)    
-            self.setregras.layout().addWidget(image)
-            self.setregras.layout().addWidget(s)
+            self.setRules.layout().addWidget(image)
+            self.setRules.layout().addWidget(s)
         
-        self.setregras.setVisible(True)
-        self.tabuleiro_widget.setVisible(False)
+        self.setRules.setVisible(True)
+        self.board_widget.setVisible(False)
 
     def jogar(self):
-        self.label.setText("Jogando...")
-        self.tabuleiro_widget.setVisible(True)
-        self.setregras .setVisible(False) 
+        self.label.setText("Start!")
+        self.board_widget.setVisible(True)
+        self.setRules .setVisible(False) 
 
     def sair(self):
         self.close()
 
 app = QApplication(sys.argv)
-janela = MinhaJanela()
-janela.show()
+window = MyWindow()
+window.show()
 sys.exit(app.exec_())
