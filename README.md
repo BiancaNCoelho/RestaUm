@@ -6,9 +6,9 @@ RestaUm(Marble Solitaire) game project.
 (subjected to change)
 
 <div style="display: flex; overflow-x: auto; gap: 10px;">
-    <img src="assets/images/mainpage.png" width="300"/>
-    <img src="assets/images/playpage.png" width="300"/>
-    <img src="assets/images/rulespage.png" width="300"/>
+    <img src="assets/images/mainpage.png" width="200"/>
+    <img src="assets/images/playpage.png" width="200"/>
+    <img src="assets/images/rulespage.png" width="200"/>
 </div>
 
 ## Made with:
